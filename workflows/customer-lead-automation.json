@@ -1,0 +1,827 @@
+{
+  "name": "Customer Lead Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 1. Capture\nThe form writes one Airtable row. The address is checked before any message goes out.",
+        "height": 180,
+        "width": 360,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1040,
+        240
+      ],
+      "id": "186f0dfb-867c-4402-902e-49069e4e64ce",
+      "name": "Note capture"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Deliverable\nOpenAI writes the welcome. Gemini writes it only if OpenAI fails. Gmail sends it, then Slack and Airtable update.",
+        "height": 200,
+        "width": 360,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -140
+      ],
+      "id": "a463c974-01da-4a03-99a3-3dd7357bcaef",
+      "name": "Note deliverable"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Not deliverable\nNo email is sent. The row is marked Failed, copied to Google Sheets, and posted in Slack.",
+        "height": 180,
+        "width": 360,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        240,
+        1100
+      ],
+      "id": "43e0e9cf-1ac6-4527-9f54-b56cf788f440",
+      "name": "Note rejected"
+    },
+    {
+      "parameters": {
+        "formTitle": "Contact Intake Form",
+        "formDescription": "Share your name, email, and what you want help with.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Interest",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.5,
+      "position": [
+        -1040,
+        480
+      ],
+      "id": "5c3fb6e5-078f-4a8b-a672-c23f021b27e8",
+      "name": "On form submission",
+      "webhookId": "b56cdca3-eb38-4a22-86c8-9a128f743a9d"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "id",
+          "cachedResultName": "Your Airtable base"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "id",
+          "cachedResultName": "Your leads table"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Name": "={{ $json.Name }}",
+            "Email": "={{ $json.Email }}",
+            "Interest": "={{ $json.Interest }}",
+            "Submitted At": "={{ $json.submittedAt }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Interest",
+              "displayName": "Interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Submitted At",
+              "displayName": "Submitted At",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        -720,
+        480
+      ],
+      "id": "09b2aee9-080e-4ef9-8870-9d5d70afeee0",
+      "name": "Save lead",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtableTokenApi-placeholder",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://emailreputation.abstractapi.com/v1/",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "email",
+              "value": "={{ $json.fields.Email }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -400,
+        480
+      ],
+      "id": "2abb6dac-5253-4ee4-85c1-41419761d638",
+      "name": "Verify email",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "httpQueryAuth-placeholder",
+          "name": "AbstractAPI Email Reputation"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cfcdb711-8bde-4c31-8c59-7f6a821c9d81",
+              "leftValue": "={{ $json.email_deliverability.status }}",
+              "rightValue": "deliverable",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -80,
+        480
+      ],
+      "id": "73e7f1ff-b8b5-4e9b-a87e-d510273a49b1",
+      "name": "Email deliverable?"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Name: {{ $('Save lead').item.json.fields.Name }}\nInterest: {{ $('Save lead').item.json.fields.Interest }}",
+        "needsFallback": true,
+        "options": {
+          "systemMessage": "You write a short welcome email for a new lead.\n\nThe user message has a Name line and an Interest line.\n\nWrite one email with these rules:\n- 80 to 140 words\n- Simple English, warm and professional, like a person wrote it\n- Address them by their real name\n- Mention their interest once, in an ordinary sentence\n- One sentence offering help if they get stuck\n- One sentence inviting them to reply with questions\n- No subject line\n- No placeholders left in the text\n- No emojis\n- Do not say the message was written by an AI or by automation\n\nUse this shape:\n\nHi <name>,\n\n<welcome that includes their interest>\n\n<offer of support>\n\n<invitation to reply>\n\nBest regards,\nHafizflow Team\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        280,
+        120
+      ],
+      "id": "b18931e4-544c-4caf-9395-ac5a2de9d609",
+      "name": "AI Agent",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        140,
+        340
+      ],
+      "id": "f98c9561-c493-4dab-8839-9a356f257417",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "openAiApi-placeholder",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        420,
+        340
+      ],
+      "id": "2c35b77e-0e66-4b4b-85d0-aed662851999",
+      "name": "Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "googlePalmApi-placeholder",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Save lead').item.json.fields.Email }}",
+        "subject": "=Welcome, {{ $('Save lead').item.json.fields.Name }} 👋 Let's get started",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        760,
+        40
+      ],
+      "id": "117af5d3-5fb7-47a8-aa72-0c685a82ad5c",
+      "name": "Send welcome email",
+      "webhookId": "4efd2b7f-726b-4c06-b0e6-c0b1a8c7c9bd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "gmailOAuth2-placeholder",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "id",
+          "cachedResultName": "your-channel"
+        },
+        "text": "=*New lead:* {{ $('Save lead').item.json.fields.Name }} | {{ $('Save lead').item.json.fields.Email }} | *Interest:* {{ $('Save lead').item.json.fields.Interest }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        760,
+        220
+      ],
+      "id": "b070cbbf-97ca-444c-aa2a-46d8d0a307ca",
+      "name": "Notify new lead",
+      "webhookId": "484eeefe-880d-4412-b7da-bca9745537a8",
+      "credentials": {
+        "slackApi": {
+          "id": "slackApi-placeholder",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "id",
+          "cachedResultName": "Your Airtable base"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "id",
+          "cachedResultName": "Your leads table"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Success",
+            "id": "={{ $('Save lead').item.json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Interest",
+              "displayName": "Interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Submitted At",
+              "displayName": "Submitted At",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        760,
+        400
+      ],
+      "id": "b69dc372-0f01-4dd3-a77e-a4072a7408eb",
+      "name": "Mark success",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtableTokenApi-placeholder",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id",
+          "cachedResultName": "Your error log"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $('Save lead').item.json.fields.Email }}",
+            "Interest": "={{ $('Save lead').item.json.fields.Interest }}",
+            "Name": "={{ $('Save lead').item.json.fields.Name }}",
+            "Status": "Email not deliverable"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Interest",
+              "displayName": "Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        280,
+        720
+      ],
+      "id": "b2f2aad6-aaf8-46f0-9f89-418d1c48709a",
+      "name": "Append error log",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "googleSheetsOAuth2Api-placeholder",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "base": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_BASE_ID",
+          "mode": "id",
+          "cachedResultName": "Your Airtable base"
+        },
+        "table": {
+          "__rl": true,
+          "value": "YOUR_AIRTABLE_TABLE_ID",
+          "mode": "id",
+          "cachedResultName": "Your leads table"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $('Save lead').item.json.id }}",
+            "Status": "Failed"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": false
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Interest",
+              "displayName": "Interest",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Submitted At",
+              "displayName": "Submitted At",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.2,
+      "position": [
+        280,
+        920
+      ],
+      "id": "62653916-f88e-4a3e-b3d3-913a892ac4bb",
+      "name": "Mark failed",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "airtableTokenApi-placeholder",
+          "name": "Airtable Personal Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "id",
+          "cachedResultName": "your-channel"
+        },
+        "text": "=*Email not deliverable:* {{ $('Save lead').item.json.fields.Name }} | {{ $('Save lead').item.json.fields.Email }} | *Interest:* {{ $('Save lead').item.json.fields.Interest }}\n\nNo welcome email was sent.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        640,
+        820
+      ],
+      "id": "c30773e3-e64f-40d9-9076-bc97cfb278ef",
+      "name": "Notify invalid email",
+      "webhookId": "c33c44bd-0516-40d6-83e1-e481a5f83052",
+      "credentials": {
+        "slackApi": {
+          "id": "slackApi-placeholder",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Save lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save lead": {
+      "main": [
+        [
+          {
+            "node": "Verify email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify email": {
+      "main": [
+        [
+          {
+            "node": "Email deliverable?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email deliverable?": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append error log",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mark failed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify invalid email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send welcome email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send welcome email": {
+      "main": [
+        [
+          {
+            "node": "Notify new lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mark success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
