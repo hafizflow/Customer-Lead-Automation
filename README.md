@@ -4,6 +4,9 @@ An n8n workflow for new leads. A person submits a short contact form. The run st
 
 n8n hosts the form and runs every step.
 
+## Image 
+<img width="1048" height="674" alt="Screenshot 2026-10-30 at 6 36 43 PM" src="https://github.com/user-attachments/assets/e2c69691-bfc0-475f-851e-57d699f04c4d" />
+
 ## Flow
 
 ```mermaid
